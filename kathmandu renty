@@ -1,120 +1,152 @@
-// Updated Room/Flat Rental Website with Firebase, User Login, Google Maps, and Admin Panel
-
-// Tech Stack: HTML, CSS, JavaScript, Firebase (Firestore + Auth), Google Maps API
-
-// index.html
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>RentHub Kathmandu</title>
-  <link rel="stylesheet" href="style.css">
-  <script src="https://www.gstatic.com/firebasejs/10.3.0/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.3.0/firebase-auth.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.3.0/firebase-firestore.js"></script>
-  <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_GOOGLE_MAPS_API_KEY"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Room Rent Kathmandu</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #f4f4f4;
+      color: #333;
+    }
+
+    header {
+      background: #6200ea;
+      color: white;
+      padding: 1rem;
+      text-align: center;
+      font-size: 1.5rem;
+    }
+
+    .container {
+      padding: 2rem;
+      max-width: 800px;
+      margin: auto;
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    form {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    input,
+    textarea,
+    button {
+      padding: 0.75rem;
+      font-size: 1rem;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+
+    button {
+      background: #6200ea;
+      color: white;
+      cursor: pointer;
+      border: none;
+    }
+
+    button:hover {
+      background: #3700b3;
+    }
+
+    .listing {
+      background: #fafafa;
+      margin: 1rem 0;
+      padding: 1rem;
+      border-left: 4px solid #6200ea;
+    }
+
+    #map {
+      width: 100%;
+      height: 300px;
+      margin: 1rem 0;
+      border-radius: 10px;
+    }
+  </style>
 </head>
+
 <body>
-  <h1>RentHub Kathmandu</h1>
-  <div id="auth-section">
-    <input type="email" id="email" placeholder="Email">
-    <input type="password" id="password" placeholder="Password">
-    <button onclick="login()">Login</button>
-    <button onclick="signup()">Sign Up</button>
-    <button onclick="logout()">Logout</button>
+  <header>Room & Flat Rentals - Kathmandu</header>
+  <div class="container">
+    <form id="listingForm">
+      <input type="text" id="owner" placeholder="Owner Name" required />
+      <input type="text" id="location" placeholder="Location" required />
+      <input type="number" id="price" placeholder="Price (NPR)" required />
+      <textarea id="description" placeholder="Room Description" rows="4" required></textarea>
+      <button type="submit">Submit Listing</button>
+    </form>
+
+    <div id="listings"></div>
+    <div id="map"></div>
   </div>
 
-  <div id="post-section" style="display:none;">
-    <h2>Post a Room</h2>
-    <input type="text" id="title" placeholder="Room Title">
-    <textarea id="description" placeholder="Description"></textarea>
-    <input type="text" id="address" placeholder="Address">
-    <button onclick="getLocation()">Pin on Map</button>
-    <div id="map" style="width:100%; height:300px;"></div>
-    <button onclick="postListing()">Submit</button>
-  </div>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+  <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_GOOGLE_MAPS_API_KEY"></script>
 
-  <div id="listings"></div>
+  <script>
+    const firebaseConfig = {
+      apiKey: "YOUR_FIREBASE_API_KEY",
+      authDomain: "YOUR_FIREBASE_PROJECT.firebaseapp.com",
+      projectId: "YOUR_FIREBASE_PROJECT",
+      storageBucket: "YOUR_FIREBASE_PROJECT.appspot.com",
+      messagingSenderId: "YOUR_SENDER_ID",
+      appId: "YOUR_APP_ID"
+    };
 
-  <script src="app.js"></script>
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    document.getElementById("listingForm").addEventListener("submit", async function (e) {
+      e.preventDefault();
+      const owner = document.getElementById("owner").value;
+      const location = document.getElementById("location").value;
+      const price = document.getElementById("price").value;
+      const description = document.getElementById("description").value;
+
+      await db.collection("listings").add({ owner, location, price, description });
+      document.getElementById("listingForm").reset();
+      fetchListings();
+    });
+
+    async function fetchListings() {
+      const listingsDiv = document.getElementById("listings");
+      listingsDiv.innerHTML = "";
+      const snapshot = await db.collection("listings").get();
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        listingsDiv.innerHTML += `
+          <div class="listing">
+            <strong>${data.owner}</strong><br>
+            Location: ${data.location}<br>
+            Price: NPR ${data.price}<br>
+            <p>${data.description}</p>
+          </div>
+        `;
+      });
+    }
+
+    fetchListings();
+
+    // Map loading example
+    function initMap() {
+      const center = { lat: 27.7172, lng: 85.324 }; // Kathmandu
+      const map = new google.maps.Map(document.getElementById("map"), {
+        zoom: 12,
+        center,
+      });
+    }
+
+    window.initMap = initMap;
+  </script>
 </body>
+
 </html>
 
-// style.css
-body { font-family: Arial; padding: 20px; }
-input, textarea, button { display: block; margin: 10px 0; width: 100%; padding: 10px; }
-
-// app.js
-const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_AUTH_DOMAIN",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_STORAGE_BUCKET",
-  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-  appId: "YOUR_APP_ID"
-};
-firebase.initializeApp(firebaseConfig);
-const auth = firebase.auth();
-const db = firebase.firestore();
-
-function signup() {
-  const email = document.getElementById("email").value;
-  const password = document.getElementById("password").value;
-  auth.createUserWithEmailAndPassword(email, password)
-    .then(() => alert("Signed Up!"))
-    .catch(err => alert(err.message));
-}
-
-function login() {
-  const email = document.getElementById("email").value;
-  const password = document.getElementById("password").value;
-  auth.signInWithEmailAndPassword(email, password)
-    .then(() => {
-      document.getElementById("post-section").style.display = "block";
-      loadListings();
-    })
-    .catch(err => alert(err.message));
-}
-
-function logout() {
-  auth.signOut().then(() => {
-    document.getElementById("post-section").style.display = "none";
-  });
-}
-
-let currentLat = 0, currentLng = 0;
-function getLocation() {
-  navigator.geolocation.getCurrentPosition(position => {
-    currentLat = position.coords.latitude;
-    currentLng = position.coords.longitude;
-    const map = new google.maps.Map(document.getElementById("map"), {
-      center: { lat: currentLat, lng: currentLng },
-      zoom: 15
-    });
-    new google.maps.Marker({ position: { lat: currentLat, lng: currentLng }, map });
-  });
-}
-
-function postListing() {
-  const title = document.getElementById("title").value;
-  const description = document.getElementById("description").value;
-  const address = document.getElementById("address").value;
-  db.collection("listings").add({
-    title, description, address,
-    lat: currentLat, lng: currentLng,
-    status: "pending",
-    postedBy: auth.currentUser.email
-  }).then(() => alert("Posted. Awaiting Approval."));
-}
-
-function loadListings() {
-  db.collection("listings").where("status", "==", "approved").onSnapshot(snapshot => {
-    const listings = document.getElementById("listings");
-    listings.innerHTML = "";
-    snapshot.forEach(doc => {
-      const data = doc.data();
-      listings.innerHTML += `<div><h3>${data.title}</h3><p>${data.description}</p><p>${data.address}</p></div>`;
-    });
-  });
-}
